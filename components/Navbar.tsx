@@ -1,18 +1,9 @@
-// src/components/navigation.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Login', href: '/Login' },
-  { name: 'Register', href: '/register' },
-  { name: 'About', href: '/about' },
-  { name: 'Test', href: '/test' }
-
-];
+import { useAuth } from './AuthProvider';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -22,6 +13,29 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+
+  // Zdefiniuj nawigację zależną od stanu logowania
+  const publicNavigation = [
+    { name: 'Home', href: '/' },
+    { name: 'Login', href: '/login' },
+    { name: 'Register', href: '/register' },
+    { name: 'About', href: '/about' }
+  ];
+
+  const privateNavigation = [
+    { name: 'Home', href: '/' },
+    { name: 'Test', href: '/test' },
+    { name: 'About', href: '/about' }
+  ];
+
+  // Wybierz odpowiednią nawigację w zależności od stanu logowania
+  const navigation = isAuthenticated ? privateNavigation : publicNavigation;
+
+  const handleLogout = () => {
+    logout();
+    setIsProfileMenuOpen(false);
+  };
 
   return (
     <nav className="bg-primary-800">
@@ -57,7 +71,7 @@ export default function Navigation() {
               <div className="flex space-x-4">
                 {navigation.map((item) => {
                   const isCurrent = pathname === item.href || 
-                    (pathname.startsWith(item.href) && item.href !== '/');
+                    (pathname?.startsWith(item.href) && item.href !== '/');
                   
                   return (
                     <Link
@@ -90,50 +104,56 @@ export default function Navigation() {
               </Link>
             </div>
 
-            {/* Profile dropdown */}
-            <div className="relative ml-3">
-              <div>
-                <button
-                  type="button"
-                  className="relative flex rounded-full bg-primary-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-800"
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">Open user menu</span>
-                  <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
-                    PS
-                  </div>
-                </button>
-              </div>
-              
-              {isProfileMenuOpen && (
-                <div 
-                  className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                >
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileMenuOpen(false)}
+            {/* Profile dropdown - pokazuje tylko po zalogowaniu */}
+            {isAuthenticated && (
+              <div className="relative ml-3">
+                <div>
+                  <button
+                    type="button"
+                    className="relative flex rounded-full bg-primary-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-800"
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   >
-                    Your Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="block px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileMenuOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                  <Link
-                    href="/logout"
-                    className="block px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileMenuOpen(false)}
-                  >
-                    Sign out
-                  </Link>
+                    <span className="absolute -inset-1.5" />
+                    <span className="sr-only">Open user menu</span>
+                    <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
+                      {user?.email.substring(0, 2).toUpperCase() || 'U'}
+                    </div>
+                  </button>
                 </div>
-              )}
-            </div>
+                
+                {isProfileMenuOpen && (
+                  <div 
+                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  >
+                    <div
+                      className="block px-4 py-2 text-sm text-gray-700"
+                    >
+                      {user?.email}
+                    </div>
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      Your Profile
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="block px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-lg text-gray-700 hover:bg-gray-100"
+                      onClick={handleLogout}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -144,7 +164,7 @@ export default function Navigation() {
           <div className="space-y-1 px-2 pb-3 pt-2">
             {navigation.map((item) => {
               const isCurrent = pathname === item.href || 
-                (pathname.startsWith(item.href) && item.href !== '/');
+                (pathname?.startsWith(item.href) && item.href !== '/');
               
               return (
                 <Link
@@ -170,6 +190,14 @@ export default function Navigation() {
             >
               Start Scan
             </Link>
+            {isAuthenticated && (
+              <button
+                className="block w-full text-left mt-2 px-3 py-2 rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700"
+                onClick={handleLogout}
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       )}

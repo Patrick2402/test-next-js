@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../components/AuthProvider';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
+
+  // Przekieruj użytkownika, jeśli jest już zalogowany
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
 
   // Sprawdź, czy mamy zapisany email użytkownika przy ładowaniu strony
   useEffect(() => {
@@ -35,18 +44,15 @@ export default function LoginPage() {
       });
 
       if (response.status === 200 && response.data.token) {
-        // Zapisz token JWT
-        localStorage.setItem('auth_token', response.data.token);
-        
         // Zapisz email użytkownika jeśli "remember me" jest zaznaczone
         if (rememberMe) {
           localStorage.setItem('user_email', email);
         } else {
           localStorage.removeItem('user_email');
         }
-
-        // Ustaw domyślne nagłówki autoryzacji dla przyszłych zapytań
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        // Użyj funkcji login z kontekstu autoryzacji
+        login(response.data.token, email);
         
         toast.success('Logowanie zakończone sukcesem!');
         
